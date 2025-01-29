@@ -1,9 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"github.com/mailersend/mailersend-go"
 	gomorse "github.com/ralvarezdev/go-morse"
 	"github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal"
+	internalloader "github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal/loader"
 	"log"
 	"net"
 	"strings"
@@ -494,10 +497,31 @@ func HandleMail(
 	bodyValuePos int,
 ) {
 	// Get the fields
-	fields, _, err := ReadKeyValues(
+	fields, fieldsValuePos, err := ReadKeyValues(
 		body,
 		0,
-		NoNestedObjects(bodyValuePos),
+		func(
+			isNestedObject bool,
+			key string,
+			value *string,
+			valuePos int,
+		) error {
+			// Check if it is a nested object
+			if key != "to" {
+				if isNestedObject {
+					return fmt.Errorf(
+						"expected a string at position %d",
+						bodyValuePos+valuePos,
+					)
+				}
+			} else if !isNestedObject {
+				return fmt.Errorf(
+					"expected a nested object at position %d",
+					bodyValuePos+valuePos,
+				)
+			}
+			return nil
+		},
 		"subject",
 		"message",
 		"to",
@@ -508,5 +532,54 @@ func HandleMail(
 	}
 	subject := *(*fields)["subject"]
 	message := (*fields)["message"]
-	to := *(*fields)["to"]
+	to := (*fields)["to"]
+
+	// Get the 'to' fields
+	toFields, _, err := ReadKeyValues(
+		to,
+		0,
+		NoNestedObjects((*fieldsValuePos)["to"]+bodyValuePos),
+		"name",
+		"email",
+	)
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+	toName := *(*toFields)["name"]
+	toEmail := *(*toFields)["email"]
+
+	// Send the email on a separate goroutine
+	go func() {
+		// Set the origin and recipients
+		from := mailersend.From{
+			Name:  internalloader.MailerSendName,
+			Email: internalloader.MailerSendEmail,
+		}
+		recipients := []mailersend.Recipient{
+			{
+				Name:  toName,
+				Email: toEmail,
+			},
+		}
+
+		// Send the email
+		mailMessage := internalloader.MailerSendClient.Email.NewMessage()
+		mailMessage.SetFrom(from)
+		mailMessage.SetRecipients(recipients)
+		mailMessage.SetSubject(subject)
+		mailMessage.SetText(*message)
+
+		res, err := internalloader.MailerSendClient.Email.Send(
+			context.Background(),
+			mailMessage,
+		)
+		if err != nil {
+			// handle error
+			fmt.Println("Error sending email:", err)
+		} else {
+			fmt.Println("Email sent successfully:", res)
+		}
+	}()
+
 }

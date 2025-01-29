@@ -11,6 +11,9 @@ const (
 
 	// EnvMailerSendDomain is the key for the domain of the mailer send service in the environment variables
 	EnvMailerSendDomain = "MAILER_SEND_DOMAIN"
+
+	// MailerSendName is the name of the mailer send service
+	MailerSendName string = "Weird Protocol"
 )
 
 var (
@@ -22,6 +25,9 @@ var (
 
 	// MailerSendDomain is the domain of the mailer send service
 	MailerSendDomain string
+
+	// MailerSendEmail is the email of the mailer send service
+	MailerSendEmail string
 
 	// MailerSendClient is the client for the mailer send service
 	MailerSendClient *mailersend.Mailersend
@@ -51,4 +57,7 @@ func Load() {
 
 	// Create a new MailerSend client
 	MailerSendClient = mailersend.NewMailersend(MailerSendAPIKey)
+
+	// Set the email for the mailer send service
+	MailerSendEmail = "noreply@" + MailerSendDomain
 }

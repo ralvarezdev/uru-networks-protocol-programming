@@ -91,14 +91,18 @@ func main() {
 			fmt.Print("Message: ")
 			message, _, _ := reader.ReadLine()
 
-			fmt.Print("To: ")
-			to, _, _ := reader.ReadLine()
+			fmt.Print("To (Name): ")
+			toName, _, _ := reader.ReadLine()
+
+			fmt.Print("To (Email): ")
+			toEmail, _, _ := reader.ReadLine()
 
 			// Send the mail message
 			response, err := internalclient.SendMailMessage(
 				string(subject),
 				string(message),
-				string(to),
+				string(toName),
+				string(toEmail),
 				sendMessage,
 			)
 			if err != nil {

@@ -14,7 +14,10 @@ header: \"%s\",
 body: {
 	subject: %s,
 	message: \"%s\",
-	to: \"%s\"
+	to: {
+		name: \"%s\",
+		email: \"%s\"
+	}
 }`
 
 	// MorseMessageFormat is the morse message format
@@ -127,7 +130,7 @@ func SendMessage(
 
 // SendMailMessage sends a mail message to the server
 func SendMailMessage(
-	subject, message, to string,
+	subject, message, toName, toEmail string,
 	sendMessage func(protocol string, message string) (
 		response string,
 		err error,
@@ -141,7 +144,8 @@ func SendMailMessage(
 			internal.MailHeader,
 			subject,
 			message,
-			to,
+			toName,
+			toEmail,
 		),
 	)
 	if err != nil {
