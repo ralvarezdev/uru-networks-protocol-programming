@@ -18,13 +18,13 @@ const (
 )
 
 // CheckFilesFolder checks the files folder
-func CheckFilesFolder() bool {
+func CheckFilesFolder(connNumber int) bool {
 	// Check if the files folder exists
 	if _, err := os.Stat(FilesFolder); err != nil {
 		// Create the files folder
 		err := os.Mkdir(FilesFolder, 0755)
 		if err != nil {
-			log.Println("Error creating files folder:", err)
+			Log(connNumber, "Error creating files folder: %s"+err.Error())
 		}
 		return false
 	}
@@ -59,6 +59,11 @@ func MissingAtPositionError(str string, pos int) error {
 	return fmt.Errorf("'%s' is missing in the data at position %d", str, pos)
 }
 
+// Log logs a message
+func Log(connNumber int, msg string) {
+	log.Printf("connection %d: %s", connNumber, msg)
+}
+
 // LogAndWrite logs and writes a message
 func LogAndWrite(
 	connNumber int,
@@ -66,7 +71,7 @@ func LogAndWrite(
 	msg string,
 ) {
 	// Log the error
-	log.Printf("connection %d: %s", connNumber, msg)
+	Log(connNumber, msg)
 
 	// Write the error
 	writeFn(msg)
@@ -144,6 +149,7 @@ func ReadKeyValue(
 		isNestedObject = true
 		depth++
 		pos++
+		pos = SkipUntilANonSpacingCharacter(data, pos)
 	}
 
 	// Get the value
@@ -178,7 +184,6 @@ func ReadKeyValue(
 				pos,
 			)
 		}
-		pos++
 	} else if isNestedObject {
 		if (*data)[pos] != '}' {
 			return false, key, nil, pos, valuePos, MissingAtPositionError(
@@ -186,11 +191,13 @@ func ReadKeyValue(
 				pos,
 			)
 		}
-		pos++
 	}
 
 	// Get the value
 	valueStr := (*data)[tempPos:pos]
+	if isString || isNestedObject {
+		pos++
+	}
 	value = &valueStr
 
 	return isNestedObject, key, value, pos, valuePos, nil
@@ -212,6 +219,7 @@ func ReadKeyValues(
 	if data == nil {
 		return nil, nil, fmt.Errorf("data is nil")
 	}
+	dataLen := len(*data)
 
 	// Create the fields to read map
 	fieldsToReadMap := make(map[string]bool)
@@ -222,7 +230,9 @@ func ReadKeyValues(
 	// Get the fields
 	var lastKey string
 	fields = new(map[string]*string)
+	*fields = make(map[string]*string)
 	fieldsValuePos = new(map[string]int)
+	*fieldsValuePos = make(map[string]int)
 	for i := 0; i < 2; i++ {
 		// Get the key and value
 		isNestedObject, key, value, finalPos, valuePos, err := ReadKeyValue(
@@ -246,12 +256,21 @@ func ReadKeyValues(
 		(*fieldsValuePos)[key] = valuePos
 		lastKey = key
 
+		// Set field as read
+		fieldsToReadMap[key] = false
+
 		// Update the position
 		pos = finalPos
 
 		// Check if the next character is a comma
 		pos = SkipUntilANonSpacingCharacter(data, pos)
-		if pos >= len(*data) {
+		if pos < dataLen-1 {
+			if (*data)[pos] != ',' {
+				return nil, nil, MissingAtPositionError(",", pos)
+			} else {
+				pos++
+			}
+		} else {
 			// Check if there are any missing fields
 			var missingFields []string
 			for field, isMissing := range fieldsToReadMap {
@@ -259,21 +278,21 @@ func ReadKeyValues(
 					missingFields = append(missingFields, field)
 				}
 			}
-			return nil, nil, fmt.Errorf(
-				"missing fields: %s",
-				strings.Join(missingFields, ", "),
-			)
+			if len(missingFields) > 0 {
+				return nil, nil, fmt.Errorf(
+					"missing fields: %s",
+					strings.Join(missingFields, ", "),
+				)
+			}
 		}
-		if (*data)[pos] != ',' {
-			return nil, nil, MissingAtPositionError(",", pos)
-		}
-		pos++
 	}
 
 	// Check if there is any data after the last value
-	pos = SkipUntilANonSpacingCharacter(data, pos)
-	if pos < len(*data) {
-		return nil, nil, fmt.Errorf("unexpected data after the %s", lastKey)
+	if pos < dataLen-1 {
+		pos = SkipUntilANonSpacingCharacter(data, pos)
+		if pos < dataLen {
+			return nil, nil, fmt.Errorf("unexpected data after the %s", lastKey)
+		}
 	}
 	return fields, fieldsValuePos, nil
 }
@@ -286,7 +305,7 @@ func HandleIncomingData(
 ) {
 	// Check if the write function is nil
 	if writeFn == nil {
-		log.Println("write function is nil")
+		Log(connNumber, "write function is nil")
 		return
 	}
 
@@ -297,7 +316,7 @@ func HandleIncomingData(
 	}
 
 	// Process the data
-	log.Println("Received data: ", *data)
+	Log(connNumber, "Received data: "+*data)
 
 	// Get the header and body
 	fields, fieldsValuePos, err := ReadKeyValues(
@@ -334,8 +353,8 @@ func HandleIncomingData(
 	header := (*fields)["header"]
 	body := (*fields)["body"]
 	bodyValuePos := (*fieldsValuePos)["body"]
-	log.Println("Header: ", *header)
-	log.Println("Body: ", *body)
+	Log(connNumber, "Header: "+*header)
+	Log(connNumber, "Body: "+*body)
 
 	// Call the appropriate handler
 	switch *header {
@@ -369,7 +388,7 @@ func HandleTCPConnection(conn net.Conn, connNumber int) (
 	_, err := conn.Read(buffer)
 	if err != nil {
 		// Log the error
-		log.Println("Error reading: ", err)
+		Log(connNumber, "Error reading: "+err.Error())
 
 		// Write that an error occurred
 		_, err = conn.Write([]byte("An error occurred"))
@@ -382,7 +401,7 @@ func HandleTCPConnection(conn net.Conn, connNumber int) (
 	return func(message string) {
 		_, err := conn.Write([]byte(message))
 		if err != nil {
-			log.Println("error writing: ", err)
+			Log(connNumber, "error writing: "+err.Error())
 		}
 	}, connNumber, &trimmedBuffer
 }
@@ -401,7 +420,7 @@ func HandleUDPIncomingData(
 	return func(message string) {
 		_, err := conn.WriteToUDP([]byte(message), clientAddr)
 		if err != nil {
-			log.Println("error writing: ", err)
+			Log(connNumber, "error writing: "+err.Error())
 		}
 	}, connNumber, data
 }
@@ -492,7 +511,7 @@ func HandleAddFile(
 	}
 
 	// Check if the files folder exists
-	CheckFilesFolder()
+	CheckFilesFolder(connNumber)
 
 	// Create the file
 	file, err := os.Create(fmt.Sprintf("%s/%s", FilesFolder, filename))
@@ -542,7 +561,7 @@ func HandleRemoveFile(
 	}
 
 	// Check if the files folder exists
-	if !CheckFilesFolder() {
+	if !CheckFilesFolder(connNumber) {
 		LogAndWrite(connNumber, writeFn, "files folder does not exist")
 		return
 	}
