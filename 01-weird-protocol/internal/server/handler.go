@@ -9,6 +9,7 @@ import (
 	internalloader "github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal/loader"
 	"log"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -16,6 +17,20 @@ const (
 	// FilesFolder is the folder for the files
 	FilesFolder = "files"
 )
+
+// CheckFilesFolder checks the files folder
+func CheckFilesFolder() bool {
+	// Check if the files folder exists
+	if _, err := os.Stat(FilesFolder); err != nil {
+		// Create the files folder
+		err := os.Mkdir(FilesFolder, 0755)
+		if err != nil {
+			log.Println("Error creating files folder:", err)
+		}
+		return false
+	}
+	return true
+}
 
 // NoNestedObjects is validation function that checks if none of the fields is a nested objects
 func NoNestedObjects(initialPos int) func(
@@ -466,6 +481,35 @@ func HandleAddFile(
 	}
 	filename := *(*fields)["filename"]
 	content := (*fields)["content"]
+
+	// Check if the filename contains a path separator
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		LogAndWrite(connNumber, writeFn, "invalid filename")
+		return
+	}
+
+	// Check if the files folder exists
+	CheckFilesFolder()
+
+	// Create the file
+	file, err := os.Create(fmt.Sprintf("%s/%s", FilesFolder, filename))
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+
+	// Write the content to the file
+	_, err = file.WriteString(*content)
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+
+	// Close the file
+	err = file.Close()
+
+	// Write the success message
+	writeFn("File added successfully")
 }
 
 // HandleRemoveFile handles the remove file
@@ -487,6 +531,28 @@ func HandleRemoveFile(
 		return
 	}
 	filename := *(*fields)["filename"]
+
+	// Check if the filename contains a path separator
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		LogAndWrite(connNumber, writeFn, "invalid filename")
+		return
+	}
+
+	// Check if the files folder exists
+	if !CheckFilesFolder() {
+		LogAndWrite(connNumber, writeFn, "files folder does not exist")
+		return
+	}
+
+	// Remove the file
+	err = os.Remove(fmt.Sprintf("%s/%s", FilesFolder, filename))
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+
+	// Write the success message
+	writeFn("File removed successfully")
 }
 
 // HandleMail handles the mail
