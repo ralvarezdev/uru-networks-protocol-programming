@@ -458,6 +458,17 @@ func HandleMorseCode(
 			),
 		)
 	}
+
+	// Convert the message
+	var convertedMessage string
+	if to == internal.MorseToMorse {
+		convertedMessage = internalloader.MorseCodeHandler.Encode(*message)
+	} else {
+		convertedMessage = internalloader.MorseCodeHandler.Decode(*message)
+	}
+
+	// Write the converted message
+	writeFn(convertedMessage)
 }
 
 // HandleAddFile handles the add file

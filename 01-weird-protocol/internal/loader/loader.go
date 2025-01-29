@@ -3,6 +3,8 @@ package loader
 import (
 	"github.com/mailersend/mailersend-go"
 	goloaderenv "github.com/ralvarezdev/go-loader/env"
+	gomorse "github.com/ralvarezdev/go-morse"
+	gomorseinternational "github.com/ralvarezdev/go-morse/international"
 )
 
 const (
@@ -31,6 +33,9 @@ var (
 
 	// MailerSendClient is the client for the mailer send service
 	MailerSendClient *mailersend.Mailersend
+
+	// MorseCodeHandler is the handler for the morse code service
+	MorseCodeHandler *gomorse.MorseCodeHandler
 )
 
 // Load loads the loader
@@ -60,4 +65,11 @@ func Load() {
 
 	// Set the email for the mailer send service
 	MailerSendEmail = "noreply@" + MailerSendDomain
+
+	// Create the Morse code handler
+	morseCodeHandler, err := gomorseinternational.NewMorseCodeHandler()
+	if err != nil {
+		panic(err)
+	}
+	MorseCodeHandler = morseCodeHandler
 }
