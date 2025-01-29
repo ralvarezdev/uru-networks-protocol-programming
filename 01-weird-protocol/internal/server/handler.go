@@ -2,19 +2,48 @@ package server
 
 import (
 	"fmt"
+	gomorse "github.com/ralvarezdev/go-morse"
 	"github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal"
 	"log"
 	"net"
 	"strings"
 )
 
+const (
+	// FilesFolder is the folder for the files
+	FilesFolder = "files"
+)
+
+// NoNestedObjects is validation function that checks if none of the fields is a nested objects
+func NoNestedObjects(initialPos int) func(
+	isNestedObject bool,
+	key string,
+	value *string,
+	valuePos int,
+) error {
+	return func(
+		isNestedObject bool,
+		key string,
+		value *string,
+		valuePos int,
+	) error {
+		// Check if it is a nested object
+		if isNestedObject {
+			return fmt.Errorf(
+				"expected a string at position %d", initialPos+valuePos,
+			)
+		}
+		return nil
+	}
+}
+
 // MissingAtPositionError is the error for a missing string at a position
 func MissingAtPositionError(str string, pos int) error {
 	return fmt.Errorf("'%s' is missing in the data at position %d", str, pos)
 }
 
-// LogAndWriteError logs and writes an error
-func LogAndWriteError(
+// LogAndWrite logs and writes a message
+func LogAndWrite(
 	connNumber int,
 	writeFn func(message string),
 	msg string,
@@ -24,6 +53,15 @@ func LogAndWriteError(
 
 	// Write the error
 	writeFn(msg)
+}
+
+// LogAndWriteError logs and writes an error
+func LogAndWriteError(
+	connNumber int,
+	writeFn func(message string),
+	err error,
+) {
+	LogAndWrite(connNumber, writeFn, err.Error())
 }
 
 // SkipUntilANonSpacingCharacter skips until a non-spacing character is found
@@ -237,14 +275,14 @@ func HandleIncomingData(
 
 	//	Check if the data is nil
 	if data == nil {
-		LogAndWriteError(connNumber, writeFn, "data is nil")
+		LogAndWrite(connNumber, writeFn, "data is nil")
 	}
 
 	// Process the data
 	log.Println("Received data: ", data)
 
 	// Get the header and body
-	fields, _, err := ReadKeyValues(
+	fields, fieldsValuePos, err := ReadKeyValues(
 		data,
 		0,
 		func(
@@ -270,28 +308,29 @@ func HandleIncomingData(
 		"body",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err.Error())
+		LogAndWriteError(connNumber, writeFn, err)
 		return
 	}
 
 	// Log the header and body
 	header := (*fields)["header"]
 	body := (*fields)["body"]
+	bodyValuePos := (*fieldsValuePos)["body"]
 	log.Println("Header: ", *header)
 	log.Println("Body: ", *body)
 
 	// Call the appropriate handler
 	switch *header {
 	case internal.MorseHeader:
-		HandleMorseCode(connNumber, writeFn, body)
+		HandleMorseCode(connNumber, writeFn, body, bodyValuePos)
 	case internal.AddFileHeader:
-		HandleAddFile(connNumber, writeFn, body)
+		HandleAddFile(connNumber, writeFn, body, bodyValuePos)
 	case internal.RemoveFileHeader:
-		HandleRemoveFile(connNumber, writeFn, body)
+		HandleRemoveFile(connNumber, writeFn, body, bodyValuePos)
 	case internal.MailHeader:
-		HandleMail(connNumber, writeFn, body)
+		HandleMail(connNumber, writeFn, body, bodyValuePos)
 	default:
-		LogAndWriteError(
+		LogAndWrite(
 			connNumber,
 			writeFn,
 			fmt.Sprintf("unknown header: %s", *header),
@@ -362,12 +401,68 @@ func HandleMorseCode(
 	connNumber int,
 	writeFn func(message string),
 	body *string,
+	bodyValuePos int,
 ) {
+	// Get the fields
+	fields, _, err := ReadKeyValues(
+		body,
+		0,
+		NoNestedObjects(bodyValuePos),
+		"message",
+		"to",
+	)
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+	message := (*fields)["message"]
+	to := *(*fields)["to"]
+
+	// Check the 'to' value
+	toValues := []string{internal.MorseToMorse, internal.MorseToText}
+	found := false
+	for _, toValue := range toValues {
+		if to == toValue {
+			found = true
+			break
+		}
+	}
+
+	// Check if it was found
+	if !found {
+		LogAndWrite(
+			connNumber,
+			writeFn,
+			fmt.Sprintf(
+				"invalid 'to' field value %s, expected: %s",
+				to,
+				strings.Join(toValues, ", "),
+			),
+		)
+	}
 }
 
 // HandleAddFile handles the add file
-func HandleAddFile(connNumber int, writeFn func(message string), body *string) {
-
+func HandleAddFile(
+	connNumber int,
+	writeFn func(message string),
+	body *string,
+	bodyValuePos int,
+) {
+	// Get the fields
+	fields, _, err := ReadKeyValues(
+		body,
+		0,
+		NoNestedObjects(bodyValuePos),
+		"filename",
+		"content",
+	)
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+	filename := *(*fields)["filename"]
+	content := (*fields)["content"]
 }
 
 // HandleRemoveFile handles the remove file
@@ -375,10 +470,43 @@ func HandleRemoveFile(
 	connNumber int,
 	writeFn func(message string),
 	body *string,
+	bodyValuePos int,
 ) {
-
+	// Get the fields
+	fields, _, err := ReadKeyValues(
+		body,
+		0,
+		NoNestedObjects(bodyValuePos),
+		"filename",
+	)
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+	filename := *(*fields)["filename"]
 }
 
 // HandleMail handles the mail
-func HandleMail(connNumber int, writeFn func(message string), body *string) {
+func HandleMail(
+	connNumber int,
+	writeFn func(message string),
+	body *string,
+	bodyValuePos int,
+) {
+	// Get the fields
+	fields, _, err := ReadKeyValues(
+		body,
+		0,
+		NoNestedObjects(bodyValuePos),
+		"subject",
+		"message",
+		"to",
+	)
+	if err != nil {
+		LogAndWriteError(connNumber, writeFn, err)
+		return
+	}
+	subject := *(*fields)["subject"]
+	message := (*fields)["message"]
+	to := *(*fields)["to"]
 }

@@ -12,25 +12,25 @@ const (
 	MailMessageFormat = `
 header: \"%s\",
 body: {
-	"subject": %s,
-	"message": \"%s\",
-	"to": \"%s\"
+	subject: %s,
+	message: \"%s\",
+	to: \"%s\"
 }`
 
 	// MorseMessageFormat is the morse message format
 	MorseMessageFormat = `
 header: \"%s\",
 body: {
-	"message": \"%s\",
-	"to": \"%s\"
+	message: \"%s\",
+	to: \"%s\"
 }`
 
 	// AddFileMessageFormat is the add file message format
 	AddFileMessageFormat = `
 header: \"%s\",
 body: {
-	"filename": \"%s\",
-	"content": \"%s\"
+	filename: \"%s\",
+	content: \"%s\"
 }
 `
 
@@ -38,7 +38,7 @@ body: {
 	RemoveFileMessageFormat = `
 header: \"%s\",
 body: {
-	"filename": \"%s\"
+	filename: \"%s\"
 }`
 )
 
