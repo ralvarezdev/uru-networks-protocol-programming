@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	internalhandler "github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal/server"
 	"net"
 	"os"
+	"sync"
 )
 
 // Call the load functions on init
@@ -16,8 +17,13 @@ func init() {
 }
 
 func main() {
+	var wg sync.WaitGroup
+
 	// Start the TCP server on a separate goroutine
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		// Listen on a port
 		address := &net.TCPAddr{
 			Port: internal.TCPPort,
@@ -61,7 +67,10 @@ func main() {
 	}()
 
 	// Start the UDP server on a separate goroutine
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		// Listen on a port
 		addr := net.UDPAddr{
 			Port: internal.UDPPort,
@@ -104,4 +113,7 @@ func main() {
 			)
 		}
 	}()
+
+	// Wait for all goroutines to finish
+	wg.Wait()
 }

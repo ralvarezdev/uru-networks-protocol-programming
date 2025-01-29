@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"github.com/joho/godotenv"
 	"github.com/mailersend/mailersend-go"
 	goloaderenv "github.com/ralvarezdev/go-loader/env"
 	gomorse "github.com/ralvarezdev/go-morse"
@@ -42,7 +43,9 @@ var (
 func Load() {
 	// Load the environment variables loader
 	loader, _ := goloaderenv.NewDefaultLoader(
-		nil,
+		func() error {
+			return godotenv.Load()
+		},
 		nil,
 	)
 	Loader = loader

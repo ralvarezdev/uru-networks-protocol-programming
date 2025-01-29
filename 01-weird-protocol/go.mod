@@ -3,10 +3,11 @@ module github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protoco
 go 1.23.4
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/mailersend/mailersend-go v1.5.1
 	github.com/ralvarezdev/go-concurrency v0.1.1
 	github.com/ralvarezdev/go-loader v0.2.14
-	github.com/ralvarezdev/go-morse v0.1.1
+	github.com/ralvarezdev/go-morse v0.1.2
 )
 
 require (

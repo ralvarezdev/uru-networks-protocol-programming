@@ -1,4 +1,4 @@
-package client
+package main
 
 import (
 	"bufio"
@@ -22,8 +22,7 @@ Please select an option:
 	4. Remove a file
 	5. Send a morse code
 	6. Exit
-
-Option: `
+`
 )
 
 var (
@@ -36,6 +35,26 @@ var (
 	// UDPAddr is the UDP address
 	UDPAddr *net.UDPAddr
 )
+
+// HandleResponse the response from the server
+func HandleResponse(response string, err error) {
+	if err != nil {
+		fmt.Printf("\nFailed to send message: %v\n\n", err.Error())
+	} else {
+		fmt.Printf("\nMessage sent successfully: %v\n\n", response)
+	}
+}
+
+// ReadString reads a string from a reader
+func ReadString(message string, reader *bufio.Reader) (string, bool) {
+	fmt.Printf("%s: ", message)
+	value, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Printf("Error reading: %v\n", err.Error())
+		return "", false
+	}
+	return value[:len(value)-2], true
+}
 
 func main() {
 	// Resolve the TCP address
@@ -72,10 +91,14 @@ func main() {
 		fmt.Printf(MenuMessage, Protocol)
 
 		// Read the user input
-		option, _, _ := reader.ReadLine()
+		option, ok := ReadString("\nOption", reader)
+		if !ok {
+			return
+		}
+		fmt.Print("\n")
 
 		// Process the selected option
-		switch string(option) {
+		switch option {
 		case "1":
 			// Change the protocol
 			if Protocol == "TCP" {
@@ -85,91 +108,100 @@ func main() {
 			}
 		case "2":
 			// Ask the user for the mail details
-			fmt.Print("Subject: ")
-			subject, _, _ := reader.ReadLine()
+			subject, ok := ReadString("Subject", reader)
+			if !ok {
+				return
+			}
 
-			fmt.Print("Message: ")
-			message, _, _ := reader.ReadLine()
+			message, ok := ReadString("Message", reader)
+			if !ok {
+				return
+			}
 
-			fmt.Print("To (Name): ")
-			toName, _, _ := reader.ReadLine()
+			toName, ok := ReadString("To (Name)", reader)
+			if !ok {
+				return
+			}
 
-			fmt.Print("To (Email): ")
-			toEmail, _, _ := reader.ReadLine()
+			toEmail, ok := ReadString("To (Email)", reader)
+			if !ok {
+				return
+			}
 
 			// Send the mail message
-			response, err := internalclient.SendMailMessage(
-				string(subject),
-				string(message),
-				string(toName),
-				string(toEmail),
-				sendMessage,
+			HandleResponse(
+				internalclient.SendMailMessage(
+					subject,
+					message,
+					toName,
+					toEmail,
+					sendMessage,
+				),
 			)
-			if err != nil {
-				fmt.Println("Failed to send message:", err)
-			} else {
-				fmt.Println("Message sent successfully:", response)
-			}
 		case "3":
 			// Ask the user for the file details
-			fmt.Print("Filename: ")
-			filename, _, _ := reader.ReadLine()
+			filename, ok := ReadString("Filename", reader)
+			if !ok {
+				return
+			}
 
-			fmt.Print("Content: ")
-			content, _, _ := reader.ReadLine()
+			content, ok := ReadString("Content", reader)
+			if !ok {
+				return
+			}
 
 			// Send the add file message
-			response, err := internalclient.SendAddFileMessage(
-				string(filename),
-				string(content),
-				sendMessage,
+			HandleResponse(
+				internalclient.SendAddFileMessage(
+					filename,
+					content,
+					sendMessage,
+				),
 			)
-			if err != nil {
-				fmt.Println("Failed to send message:", err)
-			} else {
-				fmt.Println("Message sent successfully:", response)
-			}
 		case "4":
 			// Ask the user for the file details
-			fmt.Print("Filename: ")
-			filename, _, _ := reader.ReadLine()
+			filename, ok := ReadString("Filename", reader)
+			if !ok {
+				return
+			}
 
 			// Send the remove file message
-			response, err := internalclient.SendRemoveFileMessage(
-				string(filename),
-				sendMessage,
+			HandleResponse(
+				internalclient.SendRemoveFileMessage(
+					filename,
+					sendMessage,
+				),
 			)
-			if err != nil {
-				fmt.Println("Failed to send message:", err)
-			} else {
-				fmt.Println("Message sent successfully:", response)
-			}
 		case "5":
 			// Ask the user for the morse code details
-			fmt.Print("Message: ")
-			message, _, _ := reader.ReadLine()
+			message, ok := ReadString("message", reader)
+			if !ok {
+				return
+			}
 
 			// Ask whether to convert to morse code or from morse code
-			fmt.Print("Convert to morse code? (y/n): ")
-			convertToMorseStr, _, _ := reader.ReadLine()
+			convertToMorseStr, ok := ReadString(
+				"Convert to morse code? (y/n)",
+				reader,
+			)
+			if !ok {
+				return
+			}
 
 			// Convert the string to a boolean
 			convertToMorse := string(convertToMorseStr) == "y"
 
 			// Send the morse message
-			response, err := internalclient.SendMorseMessage(
-				string(message),
-				convertToMorse,
-				sendMessage,
+			HandleResponse(
+				internalclient.SendMorseMessage(
+					message,
+					convertToMorse,
+					sendMessage,
+				),
 			)
-			if err != nil {
-				fmt.Println("Failed to send message:", err)
-			} else {
-				fmt.Println("Message sent successfully:", response)
-			}
 		case "6":
 			// Exit the application
-			fmt.Println("Exiting the application...")
+			fmt.Println("\nExiting the application...")
 			os.Exit(0)
 
 		default:

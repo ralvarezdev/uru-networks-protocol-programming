@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/mailersend/mailersend-go"
-	gomorse "github.com/ralvarezdev/go-morse"
 	"github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal"
 	internalloader "github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal/loader"
 	"log"
@@ -294,10 +293,11 @@ func HandleIncomingData(
 	//	Check if the data is nil
 	if data == nil {
 		LogAndWrite(connNumber, writeFn, "data is nil")
+		return
 	}
 
 	// Process the data
-	log.Println("Received data: ", data)
+	log.Println("Received data: ", *data)
 
 	// Get the header and body
 	fields, fieldsValuePos, err := ReadKeyValues(
@@ -362,14 +362,6 @@ func HandleTCPConnection(conn net.Conn, connNumber int) (
 	int,
 	*string,
 ) {
-	// Defer the connection close
-	defer func(conn net.Conn) {
-		err := conn.Close()
-		if err != nil {
-			log.Println("error closing connection:", err)
-		}
-	}(conn)
-
 	// Create a buffer
 	buffer := make([]byte, 1024)
 

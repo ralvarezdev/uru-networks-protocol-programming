@@ -10,38 +10,38 @@ import (
 const (
 	// MailMessageFormat is the mail message format
 	MailMessageFormat = `
-header: \"%s\",
+header: "%s",
 body: {
 	subject: %s,
-	message: \"%s\",
+	message: "%s",
 	to: {
-		name: \"%s\",
-		email: \"%s\"
+		name: "%s",
+		email: "%s"
 	}
 }`
 
 	// MorseMessageFormat is the morse message format
 	MorseMessageFormat = `
-header: \"%s\",
+header: "%s",
 body: {
-	message: \"%s\",
-	to: \"%s\"
+	message: "%s",
+	to: "%s"
 }`
 
 	// AddFileMessageFormat is the add file message format
 	AddFileMessageFormat = `
-header: \"%s\",
+header: "%s",
 body: {
-	filename: \"%s\",
-	content: \"%s\"
+	filename: "%s",
+	content: "%s"
 }
 `
 
 	// RemoveFileMessageFormat is the remove file message format
 	RemoveFileMessageFormat = `
-header: \"%s\",
+header: "%s",
 body: {
-	filename: \"%s\"
+	filename: "%s"
 }`
 )
 
