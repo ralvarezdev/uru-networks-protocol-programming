@@ -131,6 +131,7 @@ func main() {
 			// Send the mail message
 			HandleResponse(
 				internalclient.SendMailMessage(
+					Protocol,
 					subject,
 					message,
 					toName,
@@ -153,6 +154,7 @@ func main() {
 			// Send the add file message
 			HandleResponse(
 				internalclient.SendAddFileMessage(
+					Protocol,
 					filename,
 					content,
 					sendMessage,
@@ -168,6 +170,7 @@ func main() {
 			// Send the remove file message
 			HandleResponse(
 				internalclient.SendRemoveFileMessage(
+					Protocol,
 					filename,
 					sendMessage,
 				),
@@ -194,6 +197,7 @@ func main() {
 			// Send the morse message
 			HandleResponse(
 				internalclient.SendMorseMessage(
+					Protocol,
 					message,
 					convertToMorse,
 					sendMessage,

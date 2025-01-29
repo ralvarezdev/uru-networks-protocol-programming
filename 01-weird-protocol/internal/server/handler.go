@@ -18,13 +18,13 @@ const (
 )
 
 // CheckFilesFolder checks the files folder
-func CheckFilesFolder(connNumber int) bool {
+func CheckFilesFolder(logFn func(string)) bool {
 	// Check if the files folder exists
 	if _, err := os.Stat(FilesFolder); err != nil {
 		// Create the files folder
 		err := os.Mkdir(FilesFolder, 0755)
 		if err != nil {
-			Log(connNumber, "Error creating files folder: %s"+err.Error())
+			logFn("error creating files folder: " + err.Error())
 		}
 		return false
 	}
@@ -60,30 +60,28 @@ func MissingAtPositionError(str string, pos int) error {
 }
 
 // Log logs a message
-func Log(connNumber int, msg string) {
-	log.Printf("connection %d: %s", connNumber, msg)
+func Log(protocol string, connNumber int) func(string) {
+	return func(msg string) {
+		log.Printf("%s [%d] %s", protocol, connNumber, msg)
+	}
 }
 
 // LogAndWrite logs and writes a message
 func LogAndWrite(
+	protocol string,
 	connNumber int,
 	writeFn func(message string),
-	msg string,
-) {
-	// Log the error
-	Log(connNumber, msg)
+) func(string) {
+	// Get the log function
+	logFn := Log(protocol, connNumber)
 
-	// Write the error
-	writeFn(msg)
-}
+	return func(msg string) {
+		// Log the message
+		logFn(msg)
 
-// LogAndWriteError logs and writes an error
-func LogAndWriteError(
-	connNumber int,
-	writeFn func(message string),
-	err error,
-) {
-	LogAndWrite(connNumber, writeFn, err.Error())
+		// Write the message
+		writeFn(msg)
+	}
 }
 
 // SkipUntilANonSpacingCharacter skips until a non-spacing character is found
@@ -299,24 +297,24 @@ func ReadKeyValues(
 
 // HandleIncomingData handles the incoming data
 func HandleIncomingData(
-	writeFn func(message string),
-	connNumber int,
+	logFn, logAndWriteFn func(message string),
 	data *string,
+	err error,
 ) {
-	// Check if the write function is nil
-	if writeFn == nil {
-		Log(connNumber, "write function is nil")
+	// Check if there is an error
+	if err != nil {
+		logAndWriteFn("error reading: " + err.Error())
 		return
 	}
 
 	//	Check if the data is nil
 	if data == nil {
-		LogAndWrite(connNumber, writeFn, "data is nil")
+		logAndWriteFn("data is nil")
 		return
 	}
 
 	// Process the data
-	Log(connNumber, "Received data: "+*data)
+	logFn("received data: " + *data)
 
 	// Get the header and body
 	fields, fieldsValuePos, err := ReadKeyValues(
@@ -345,7 +343,7 @@ func HandleIncomingData(
 		"body",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 
@@ -353,23 +351,21 @@ func HandleIncomingData(
 	header := (*fields)["header"]
 	body := (*fields)["body"]
 	bodyValuePos := (*fieldsValuePos)["body"]
-	Log(connNumber, "Header: "+*header)
-	Log(connNumber, "Body: "+*body)
+	logFn("header: " + *header)
+	logFn("body: " + *body)
 
 	// Call the appropriate handler
 	switch *header {
 	case internal.MorseHeader:
-		HandleMorseCode(connNumber, writeFn, body, bodyValuePos)
+		HandleMorseCode(logAndWriteFn, body, bodyValuePos)
 	case internal.AddFileHeader:
-		HandleAddFile(connNumber, writeFn, body, bodyValuePos)
+		HandleAddFile(logFn, logAndWriteFn, body, bodyValuePos)
 	case internal.RemoveFileHeader:
-		HandleRemoveFile(connNumber, writeFn, body, bodyValuePos)
+		HandleRemoveFile(logFn, logAndWriteFn, body, bodyValuePos)
 	case internal.MailHeader:
-		HandleMail(connNumber, writeFn, body, bodyValuePos)
+		HandleMail(logAndWriteFn, body, bodyValuePos)
 	default:
-		LogAndWrite(
-			connNumber,
-			writeFn,
+		logAndWriteFn(
 			fmt.Sprintf("unknown header: %s", *header),
 		)
 	}
@@ -378,32 +374,37 @@ func HandleIncomingData(
 // HandleTCPConnection handles the TCP connection
 func HandleTCPConnection(conn net.Conn, connNumber int) (
 	func(message string),
-	int,
+	func(message string),
 	*string,
+	error,
 ) {
+	// Set the protocol
+	protocol := "tcp"
+
+	// Get the logs functions
+	logFn := Log(protocol, connNumber)
+	logAndWriteFn := LogAndWrite(
+		protocol, connNumber, func(message string) {
+			_, err := conn.Write([]byte(message))
+			if err != nil {
+				logFn("error writing: " + err.Error())
+			}
+		},
+	)
+
 	// Create a buffer
 	buffer := make([]byte, 1024)
 
 	// Read the data from the connection
 	_, err := conn.Read(buffer)
 	if err != nil {
-		// Log the error
-		Log(connNumber, "Error reading: "+err.Error())
-
-		// Write that an error occurred
-		_, err = conn.Write([]byte("An error occurred"))
-		return nil, connNumber, nil
+		return nil, nil, nil, err
 	}
 
 	// Get the data from the buffer and trim the null characters
 	trimmedBuffer := strings.Trim(string(buffer), "\x00")
 
-	return func(message string) {
-		_, err := conn.Write([]byte(message))
-		if err != nil {
-			Log(connNumber, "error writing: "+err.Error())
-		}
-	}, connNumber, &trimmedBuffer
+	return logFn, logAndWriteFn, &trimmedBuffer, nil
 }
 
 // HandleUDPIncomingData handles the UDP incoming data
@@ -414,21 +415,29 @@ func HandleUDPIncomingData(
 	data *string,
 ) (
 	func(message string),
-	int,
+	func(message string),
 	*string,
+	error,
 ) {
-	return func(message string) {
-		_, err := conn.WriteToUDP([]byte(message), clientAddr)
-		if err != nil {
-			Log(connNumber, "error writing: "+err.Error())
-		}
-	}, connNumber, data
+	// Set the protocol
+	protocol := "udp"
+
+	// Get the logs functions
+	logFn := Log(protocol, connNumber)
+	logAndWriteFn := LogAndWrite(
+		protocol, connNumber, func(message string) {
+			_, err := conn.WriteToUDP([]byte(message), clientAddr)
+			if err != nil {
+				logFn("error writing: " + err.Error())
+			}
+		},
+	)
+	return logFn, logAndWriteFn, data, nil
 }
 
 // HandleMorseCode handles the morse code
 func HandleMorseCode(
-	connNumber int,
-	writeFn func(message string),
+	logAndWriteFn func(message string),
 	body *string,
 	bodyValuePos int,
 ) {
@@ -441,7 +450,7 @@ func HandleMorseCode(
 		"to",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 	message := (*fields)["message"]
@@ -459,9 +468,7 @@ func HandleMorseCode(
 
 	// Check if it was found
 	if !found {
-		LogAndWrite(
-			connNumber,
-			writeFn,
+		logAndWriteFn(
 			fmt.Sprintf(
 				"invalid 'to' field value %s, expected: %s",
 				to,
@@ -479,13 +486,13 @@ func HandleMorseCode(
 	}
 
 	// Write the converted message
-	writeFn(convertedMessage)
+	logAndWriteFn(convertedMessage)
 }
 
 // HandleAddFile handles the add file
 func HandleAddFile(
-	connNumber int,
-	writeFn func(message string),
+	logFn,
+	logAndWriteFn func(message string),
 	body *string,
 	bodyValuePos int,
 ) {
@@ -498,7 +505,7 @@ func HandleAddFile(
 		"content",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 	filename := *(*fields)["filename"]
@@ -506,38 +513,41 @@ func HandleAddFile(
 
 	// Check if the filename contains a path separator
 	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
-		LogAndWrite(connNumber, writeFn, "invalid filename")
+		logAndWriteFn("invalid filename")
 		return
 	}
 
 	// Check if the files folder exists
-	CheckFilesFolder(connNumber)
+	CheckFilesFolder(logFn)
 
 	// Create the file
 	file, err := os.Create(fmt.Sprintf("%s/%s", FilesFolder, filename))
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 
 	// Write the content to the file
 	_, err = file.WriteString(*content)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 
 	// Close the file
 	err = file.Close()
+	if err != nil {
+		logAndWriteFn(err.Error())
+		return
+	}
 
 	// Write the success message
-	writeFn("File added successfully")
+	logAndWriteFn("File added successfully")
 }
 
 // HandleRemoveFile handles the remove file
 func HandleRemoveFile(
-	connNumber int,
-	writeFn func(message string),
+	logFn, logAndWriteFn func(message string),
 	body *string,
 	bodyValuePos int,
 ) {
@@ -549,38 +559,37 @@ func HandleRemoveFile(
 		"filename",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 	filename := *(*fields)["filename"]
 
 	// Check if the filename contains a path separator
 	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
-		LogAndWrite(connNumber, writeFn, "invalid filename")
+		logAndWriteFn("invalid filename")
 		return
 	}
 
 	// Check if the files folder exists
-	if !CheckFilesFolder(connNumber) {
-		LogAndWrite(connNumber, writeFn, "files folder does not exist")
+	if !CheckFilesFolder(logFn) {
+		logAndWriteFn("files folder does not exist")
 		return
 	}
 
 	// Remove the file
 	err = os.Remove(fmt.Sprintf("%s/%s", FilesFolder, filename))
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 
 	// Write the success message
-	writeFn("File removed successfully")
+	logAndWriteFn("File removed successfully")
 }
 
 // HandleMail handles the mail
 func HandleMail(
-	connNumber int,
-	writeFn func(message string),
+	logAndWriteFn func(message string),
 	body *string,
 	bodyValuePos int,
 ) {
@@ -615,7 +624,7 @@ func HandleMail(
 		"to",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 	subject := *(*fields)["subject"]
@@ -631,7 +640,7 @@ func HandleMail(
 		"email",
 	)
 	if err != nil {
-		LogAndWriteError(connNumber, writeFn, err)
+		logAndWriteFn(err.Error())
 		return
 	}
 	toName := *(*toFields)["name"]
@@ -663,11 +672,12 @@ func HandleMail(
 			mailMessage,
 		)
 		if err != nil {
-			LogAndWriteError(connNumber, writeFn, err)
+			logAndWriteFn(err.Error())
+			return
 		}
 
 		// Write the success message
-		writeFn("Email sent successfully")
+		logAndWriteFn("Email sent successfully")
 	}()
 
 }

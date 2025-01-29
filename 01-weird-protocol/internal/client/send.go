@@ -130,7 +130,7 @@ func SendMessage(
 
 // SendMailMessage sends a mail message to the server
 func SendMailMessage(
-	subject, message, toName, toEmail string,
+	protocol, subject, message, toName, toEmail string,
 	sendMessage func(protocol string, message string) (
 		response string,
 		err error,
@@ -138,7 +138,7 @@ func SendMailMessage(
 ) (response string, err error) {
 	// Send the mail
 	response, err = sendMessage(
-		"TCP",
+		protocol,
 		fmt.Sprintf(
 			MailMessageFormat,
 			internal.MailHeader,
@@ -156,7 +156,7 @@ func SendMailMessage(
 
 // SendMorseMessage sends a morse message to the server
 func SendMorseMessage(
-	message string, convertToMorse bool,
+	protocol, message string, convertToMorse bool,
 	sendMessage func(protocol string, message string) (
 		response string,
 		err error,
@@ -172,7 +172,7 @@ func SendMorseMessage(
 
 	// Send the morse message
 	response, err = sendMessage(
-		"TCP",
+		protocol,
 		fmt.Sprintf(MorseMessageFormat, internal.MorseHeader, message, to),
 	)
 	if err != nil {
@@ -183,7 +183,7 @@ func SendMorseMessage(
 
 // SendAddFileMessage sends an add file message to the server
 func SendAddFileMessage(
-	filename, content string,
+	protocol, filename, content string,
 	sendMessage func(protocol string, message string) (
 		response string,
 		err error,
@@ -191,7 +191,7 @@ func SendAddFileMessage(
 ) (response string, err error) {
 	// Send the add file message
 	response, err = sendMessage(
-		"TCP",
+		protocol,
 		fmt.Sprintf(
 			AddFileMessageFormat,
 			internal.AddFileHeader,
@@ -207,7 +207,7 @@ func SendAddFileMessage(
 
 // SendRemoveFileMessage sends a remove file message to the server
 func SendRemoveFileMessage(
-	filename string,
+	protocol, filename string,
 	sendMessage func(protocol string, message string) (
 		response string,
 		err error,
@@ -215,7 +215,7 @@ func SendRemoveFileMessage(
 ) (response string, err error) {
 	// Send the remove file message
 	response, err = sendMessage(
-		"TCP",
+		protocol,
 		fmt.Sprintf(
 			RemoveFileMessageFormat,
 			internal.RemoveFileHeader,
