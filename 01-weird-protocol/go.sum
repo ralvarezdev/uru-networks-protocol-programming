@@ -1,2 +1,16 @@
+github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
+github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD/fhyJ8=
+github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17icRSOU623lUBU=
+github.com/mailersend/mailersend-go v1.5.1 h1:CRVTvzZi858V+x/bxDiNwRYve8GPP6irmjrTQzDHbF4=
+github.com/mailersend/mailersend-go v1.5.1/go.mod h1:4MeiOnzmjWCsXRNdjg6NGzsijsVrmQ8E/T003/ystQU=
 github.com/ralvarezdev/go-concurrency v0.1.1 h1:JePXpUaaH5CYL2jUTnXjAwVR6NHREFB9FPYyb6dlavQ=
 github.com/ralvarezdev/go-concurrency v0.1.1/go.mod h1:CXkm6aTnTfvhbXAyImclnWRNOnjFaQf75pTAYbrYQS4=
+github.com/ralvarezdev/go-flags v0.3.2 h1:l3f62CD5NysLAJH5XqSRGiakU/dn4pTGdX4yaBlAmMw=
+github.com/ralvarezdev/go-flags v0.3.2/go.mod h1:R3yVBYvzwqfOp26LidaiJ/zftVAnPC3pKunVpV/vosE=
+github.com/ralvarezdev/go-loader v0.2.14 h1:x7jcOWKfzZ8bKN3CCq0s0H+zPww4v/zK/YMX9JcdTTA=
+github.com/ralvarezdev/go-loader v0.2.14/go.mod h1:ECONwy/0yobzhBHzz7Cz/yYvS81fPRgi1j3/nEimQNo=
+github.com/ralvarezdev/go-logger v0.4.6 h1:eZalm0WAdNuhzbaVh5D7gC6AFztdpqE/GQfjH2pipyE=
+github.com/ralvarezdev/go-logger v0.4.6/go.mod h1:zxuMDHqtV2eoJYtmo219lima0ZSk4p/AGj/cCc390P8=
+github.com/ralvarezdev/go-strings v0.1.7 h1:rO+4TJmHJTghRWl4Nq6gfnGSyNRerunJrkS03x1SLz4=
+github.com/ralvarezdev/go-strings v0.1.7/go.mod h1:8sFOqmPJpqzS7bTjf91EzUCITnwpmkfifwY80GxV5r8=
+golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=

@@ -1,21 +1,11 @@
-package handler
+package server
 
 import (
 	"fmt"
+	"github.com/ralvarezdev/uru-networks-protocol-programming/01-weird-protocol/internal"
 	"log"
 	"net"
 	"strings"
-)
-
-const (
-	// MorseHeader is the header for the morse code
-	MorseHeader = "morse"
-
-	// FileHeader is the header for the file
-	FileHeader = "file"
-
-	// MailHeader is the header for the mail
-	MailHeader = "mail"
 )
 
 // MissingAtPositionError is the error for a missing string at a position
@@ -292,11 +282,13 @@ func HandleIncomingData(
 
 	// Call the appropriate handler
 	switch *header {
-	case MorseHeader:
+	case internal.MorseHeader:
 		HandleMorseCode(connNumber, writeFn, body)
-	case FileHeader:
-		HandleFile(connNumber, writeFn, body)
-	case MailHeader:
+	case internal.AddFileHeader:
+		HandleAddFile(connNumber, writeFn, body)
+	case internal.RemoveFileHeader:
+		HandleRemoveFile(connNumber, writeFn, body)
+	case internal.MailHeader:
 		HandleMail(connNumber, writeFn, body)
 	default:
 		LogAndWriteError(
@@ -308,9 +300,18 @@ func HandleIncomingData(
 }
 
 // HandleTCPConnection handles the TCP connection
-func HandleTCPConnection(conn net.Conn, connNumber int) {
+func HandleTCPConnection(conn net.Conn, connNumber int) (
+	func(message string),
+	int,
+	*string,
+) {
 	// Defer the connection close
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Println("error closing connection:", err)
+		}
+	}(conn)
 
 	// Create a buffer
 	buffer := make([]byte, 1024)
@@ -323,21 +324,18 @@ func HandleTCPConnection(conn net.Conn, connNumber int) {
 
 		// Write that an error occurred
 		_, err = conn.Write([]byte("An error occurred"))
-		return
+		return nil, connNumber, nil
 	}
 
 	// Get the data from the buffer and trim the null characters
-	data := strings.Trim(string(buffer), "\x00")
+	trimmedBuffer := strings.Trim(string(buffer), "\x00")
 
-	// Handle the connection data
-	HandleIncomingData(
-		func(message string) {
-			_, err := conn.Write([]byte(message))
-			if err != nil {
-				log.Println("error writing: ", err)
-			}
-		}, connNumber, &data,
-	)
+	return func(message string) {
+		_, err := conn.Write([]byte(message))
+		if err != nil {
+			log.Println("error writing: ", err)
+		}
+	}, connNumber, &trimmedBuffer
 }
 
 // HandleUDPIncomingData handles the UDP incoming data
@@ -346,18 +344,17 @@ func HandleUDPIncomingData(
 	connNumber int,
 	clientAddr *net.UDPAddr,
 	data *string,
+) (
+	func(message string),
+	int,
+	*string,
 ) {
-	// Handle the incoming data
-	HandleIncomingData(
-		func(message string) {
-			_, err := conn.WriteToUDP([]byte(message), clientAddr)
-			if err != nil {
-				log.Println("error writing: ", err)
-			}
-		},
-		connNumber,
-		data,
-	)
+	return func(message string) {
+		_, err := conn.WriteToUDP([]byte(message), clientAddr)
+		if err != nil {
+			log.Println("error writing: ", err)
+		}
+	}, connNumber, data
 }
 
 // HandleMorseCode handles the morse code
@@ -368,8 +365,18 @@ func HandleMorseCode(
 ) {
 }
 
-// HandleFile handles the file
-func HandleFile(connNumber int, writeFn func(message string), body *string) {
+// HandleAddFile handles the add file
+func HandleAddFile(connNumber int, writeFn func(message string), body *string) {
+
+}
+
+// HandleRemoveFile handles the remove file
+func HandleRemoveFile(
+	connNumber int,
+	writeFn func(message string),
+	body *string,
+) {
+
 }
 
 // HandleMail handles the mail
