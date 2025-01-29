@@ -233,7 +233,7 @@ func ReadKeyValues(
 	*fields = make(map[string]*string)
 	fieldsValuePos = new(map[string]int)
 	*fieldsValuePos = make(map[string]int)
-	for i := 0; i < 2; i++ {
+	for i := 0; i < len(fieldsToRead); i++ {
 		// Get the key and value
 		isNestedObject, key, value, finalPos, valuePos, err := ReadKeyValue(
 			data,
