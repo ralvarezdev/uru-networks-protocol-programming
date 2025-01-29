@@ -201,7 +201,7 @@ func main() {
 			)
 		case "6":
 			// Exit the application
-			fmt.Println("\nExiting the application...")
+			fmt.Println("Exiting the application...")
 			os.Exit(0)
 
 		default:

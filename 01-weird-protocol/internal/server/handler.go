@@ -658,16 +658,16 @@ func HandleMail(
 		mailMessage.SetSubject(subject)
 		mailMessage.SetText(*message)
 
-		res, err := internalloader.MailerSendClient.Email.Send(
+		_, err := internalloader.MailerSendClient.Email.Send(
 			context.Background(),
 			mailMessage,
 		)
 		if err != nil {
-			// handle error
-			fmt.Println("Error sending email:", err)
-		} else {
-			fmt.Println("Email sent successfully:", res)
+			LogAndWriteError(connNumber, writeFn, err)
 		}
+
+		// Write the success message
+		writeFn("Email sent successfully")
 	}()
 
 }
