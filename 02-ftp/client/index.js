@@ -20,8 +20,9 @@ export const __dirname = dirname(__filename);
 // FTP client base directory
 const BASE_DIR = path.resolve(__dirname, 'files')
 
-// TLS flag
-const TLS=false
+// TLS flags
+const TLS=true
+const TLS_ALLOW_SELF_SIGNED_CERT = true
 
 // Menu options and messages
 const MENU = DeepFreeze({
@@ -77,7 +78,8 @@ async function connect(){
             port: TLS?2121:21,
             user: USERNAME,
             password: PASSWORD,
-            secure: TLS
+            secure: TLS,
+            secureOptions: TLS_ALLOW_SELF_SIGNED_CERT ? { rejectUnauthorized: false } : undefined
         });
         console.log('Connected to FTP server');
     }catch(err){
@@ -337,9 +339,7 @@ async function main(){
 }
 
 // Run the main function
-main().then(() => {
-    console.log('FTP client finished');
-}).catch(err => {
+main().catch(err => {
     console.error(`FTP client failed: ${err}`);
     rl.close();
 })
