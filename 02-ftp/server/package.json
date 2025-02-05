@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "debug": "node index.js --debug"
   },
   "keywords": [
     "js",
@@ -18,6 +19,9 @@
   "author": "Ramón Álvarez",
   "license": "ISC",
   "dependencies": {
+    "@ralvarezdev/js-mode": "^0.1.1",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.4.7",
     "ftp-srv": "^4.6.3"
   },
   "type": "module"
