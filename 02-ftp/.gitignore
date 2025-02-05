@@ -23,3 +23,6 @@
 
 # NPM configuration
 /.npmrc
+
+# Files folder
+/**/*/files

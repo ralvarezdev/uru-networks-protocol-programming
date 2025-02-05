@@ -4,7 +4,8 @@
   "description": "FTP client",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
   "keywords": [
     "js",
@@ -18,5 +19,6 @@
   "license": "ISC",
   "dependencies": {
     "basic-ftp": "^5.0.5"
-  }
+  },
+  "type": "module"
 }
