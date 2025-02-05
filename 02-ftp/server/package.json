@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "FTP server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "js",
+    "javascript",
+    "ftp",
+    "server",
+    "ftp-server",
+    "files"
+  ],
+  "author": "Ramón Álvarez",
+  "license": "ISC",
+  "dependencies": {
+    "ftp-srv": "^4.6.3"
+  }
+}

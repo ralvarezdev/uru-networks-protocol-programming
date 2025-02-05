@@ -1,0 +1,22 @@
+{
+  "name": "client",
+  "version": "1.0.0",
+  "description": "FTP client",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "js",
+    "javascript",
+    "ftp",
+    "client",
+    "ftp-client",
+    "files"
+  ],
+  "author": "Ramón Álvarez",
+  "license": "ISC",
+  "dependencies": {
+    "basic-ftp": "^5.0.5"
+  }
+}
