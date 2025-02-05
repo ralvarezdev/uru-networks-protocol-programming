@@ -33,3 +33,31 @@ async function upload() {
 
 // Upload the file
 upload().then(r => console.log('Upload finished')).catch(err => console.error('Error: ', err));
+
+// Download a file from an FTP server
+async function download() {
+    const client = new FTPClient.Client();
+    client.ftp.verbose = true;
+
+    try {
+        await client.access({
+            host: '0.0.0.0',
+            port: 21,
+            user: 'user',
+            password: 'password',
+            secure: false
+        });
+
+        console.log('Connected to FTP server');
+
+        await client.downloadTo(path.resolve(__dirname, "files/download.txt"), 'download.txt');
+        console.log('File downloaded successfully');
+    } catch (err) {
+        console.error('Error: ', err);
+    }
+
+    client.close();
+}
+
+// Download the file
+download().then(r => console.log('Download finished')).catch(err => console.error('Error: ', err));
