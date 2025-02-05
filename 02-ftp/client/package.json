@@ -18,7 +18,9 @@
   "author": "Ramón Álvarez",
   "license": "ISC",
   "dependencies": {
-    "basic-ftp": "^5.0.5"
+    "@ralvarezdev/js-deep-freeze": "^0.1.0",
+    "basic-ftp": "^5.0.5",
+    "dotenv": "^16.4.7"
   },
   "type": "module"
 }

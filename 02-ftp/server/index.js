@@ -17,7 +17,7 @@ export const __dirname = dirname(__filename);
 // TLS files path and flag
 const KEY_PATH = "./private.key"
 const CERT_PATH = "./cert.crt"
-const TLS=true
+const TLS=false
 
 // Users CSV path
 const USERS_PATH = "./users.csv"
@@ -56,10 +56,10 @@ function createFTPServer(users, tls) {
     const url = tls ? 'ftp://0.0.0.0:2121' : 'ftp://0.0.0.0:21'
     const ftpServer = new FTPServer({
         url,
-        tls: tls ? tls : {
+        tls: tls ? {
             key: fs.readFileSync(KEY_PATH),
             cert: fs.readFileSync(CERT_PATH),
-        }
+        }: null
     });
 
     // Handle the login event
