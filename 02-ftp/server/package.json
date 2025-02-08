@@ -19,7 +19,7 @@
   "author": "Ramón Álvarez",
   "license": "ISC",
   "dependencies": {
-    "@ralvarezdev/js-mode": "^0.1.1",
+    "@ralvarezdev/js-mode": "^0.1.4",
     "csv-parser": "^3.2.0",
     "dotenv": "^16.4.7",
     "ftp-srv": "^4.6.3"

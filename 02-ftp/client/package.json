@@ -19,7 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@ralvarezdev/js-deep-freeze": "^0.1.0",
-    "@ralvarezdev/js-mode": "^0.1.1",
+    "@ralvarezdev/js-mode": "^0.1.4",
     "basic-ftp": "^5.0.5",
     "dotenv": "^16.4.7"
   },

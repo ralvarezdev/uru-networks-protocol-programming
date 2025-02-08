@@ -1,14 +1,14 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import FTPServer from 'ftp-srv';
 import {fileURLToPath} from "url";
 import {dirname} from "path";
 import * as path from "node:path";
 import csv from "csv-parser";
 import fs from "fs";
-import {IS_DEBUG} from "@ralvarezdev/js-mode";
+import {IS_DEBUG, loadNode} from "@ralvarezdev/js-mode";
 
 // Load the environment variables
-dotenv.config();
+loadNode()
 
 // Get the file name and directory
 const __filename = fileURLToPath(import.meta.url);

@@ -1,14 +1,14 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import FTPClient from 'basic-ftp';
 import {fileURLToPath} from "url";
 import {dirname} from "path";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import DeepFreeze from "@ralvarezdev/js-deep-freeze";
-import {IS_DEBUG} from "@ralvarezdev/js-mode";
+import {IS_DEBUG, loadNode} from "@ralvarezdev/js-mode";
 
 // Load the environment variables
-dotenv.config()
+loadNode()
 
 // Get the user username and password
 const USERNAME=process.env.FTP_USERNAME
