@@ -1,0 +1,24 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "RS232 Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "js",
+    "javascript",
+    "networks",
+    "client",
+    "rs232",
+    "serial",
+    "ports"
+  ],
+  "author": "Ramón Álvarez",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "serialport": "^13.0.0"
+  }
+}
