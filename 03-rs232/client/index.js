@@ -4,6 +4,7 @@ import fs from 'fs';
 import {fileURLToPath} from 'url';
 import {dirname} from 'path';
 import * as string_decoder from "node:string_decoder";
+import * as path from "node:path";
 
 // Log an error and exit the process
 const onError = (error) => {
@@ -16,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 export const __dirname = dirname(__filename);
 
 // Set the base path
-const BASE_PATH = `${__dirname}/files`;
+const BASE_PATH = path.join(__dirname, 'files')
 
 // Check if the base path exists
 if (!fs.existsSync(BASE_PATH))
@@ -52,41 +53,32 @@ if (DECODE)
     DECODER = new string_decoder.StringDecoder(ENCODING);
 
 // Create a new serial port receiver
-console.log(SERIAL_PORT_PATH)
-SerialPort.list().then(r=>{
-    console.log(`Available serial ports: ${r}`)
-}).catch(e=>console.error(`An error occurred while listing the serial ports: ${e}`))
-
-const receiver = new serialPort({ path: SERIAL_PORT_PATH, baudRate: SERIAL_PORT_BAUD_RATE });
+const receiver = new SerialPort({ path: SERIAL_PORT_PATH, baudRate: SERIAL_PORT_BAUD_RATE });
 
 // Handle the data event
 receiver.on('data', (data) => {
     if (data) {
         // Get the output binary file path
         const outputFilenameWithoutExtension = String(Date.now())
-        const outputBinaryFilePath = `${BASE_PATH}/${outputFilenameWithoutExtension}.bin`;
+        const outputBinaryFilePath = `${BASE_PATH}\\${outputFilenameWithoutExtension}.bin`;
 
         // Write the binary data to the file
+        console.log(`Writing binary data to ${outputBinaryFilePath}`);
         fs.writeFileSync(outputBinaryFilePath, data, (err) => {
-            if (err)
-                console.error('An error occurred while saving the binary file:', err);
-             else
-                console.log(`Binary data saved to ${outputBinaryFilePath}`);
+            console.error('An error occurred while saving the binary file:', err);
         });
 
         if (DECODE) {
             // Get the decoded output file path
-             const outputDecodedFilePath = `${BASE_PATH}/${outputFilenameWithoutExtension}.${EXTENSION}`;
+             const outputDecodedFilePath = `${BASE_PATH}\\${outputFilenameWithoutExtension}.${EXTENSION}`;
 
              // Decode the data
             const decodedData = DECODER.write(data);
 
             // Write the decoded data to the file
+            console.log(`Writing decoded data to ${outputDecodedFilePath}`);
             fs.writeFileSync(outputDecodedFilePath, decodedData, (err) => {
-                if (err)
-                    console.error('An error occurred while saving the decoded file:', err);
-                else
-                    console.log(`Decoded data saved to ${outputDecodedFilePath}`);
+                console.error('An error occurred while saving the decoded file:', err);
             });
         }
     }

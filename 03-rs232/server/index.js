@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 export const __dirname = dirname(__filename);
 
 // Set the base path
-const BASE_PATH = `${__dirname}/files`;
+const BASE_PATH = path.join(__dirname, 'files');
 
 // Check if the base path exists
 if (!fs.existsSync(BASE_PATH))
@@ -60,19 +60,19 @@ const sender = new SerialPort({ path: SERIAL_PORT_PATH, baudRate: SERIAL_PORT_BA
 
 // Get the filename and extension
 const fullFilePath = path.join(BASE_PATH, FILE_PATH);
-const filePathSplit = fullFilePath.split('/');
-const filePathWithoutFilename = filePathSplit.slice(0, -1).join('/');
+const filePathSplit = fullFilePath.split('\\');
+const filePathWithoutFilename = filePathSplit.slice(0, -1).join('\\');
 const fileName = filePathSplit.slice(-1)[0];
 const fileNameWithoutExtension = fileName.split('.').slice(0, -1).join('.');
 
 // Read the file
-let fileBuffer = fs.readFileSync(FILE_PATH);
+let fileBuffer = fs.readFileSync(fullFilePath);
 
 // Check if the file has to be converted to binary
 if (CONVERT_TO_BINARY) {
     // Convert the file to binary
     const binaryBuffer = Buffer.from(fileBuffer.toString('binary'), 'binary');
-    fs.writeFileSync(`${filePathWithoutFilename}/${fileNameWithoutExtension}.bin`, binaryBuffer);
+    fs.writeFileSync(`${filePathWithoutFilename}\\${fileNameWithoutExtension}.bin`, binaryBuffer);
 
     // Update the file buffer
     fileBuffer = binaryBuffer;
@@ -80,11 +80,10 @@ if (CONVERT_TO_BINARY) {
 
 // Send the file
 const sendFile = (fileBuffer) => {
+    console.log('Sending file...');
     sender.write(fileBuffer, (err) => {
         if (err)
             console.error('An error occurred while sending the file:', err);
-        else
-            console.log('File sent successfully');
     });
 }
 
