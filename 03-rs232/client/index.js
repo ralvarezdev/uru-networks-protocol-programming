@@ -3,7 +3,6 @@ import {SerialPort} from 'serialport';
 import fs from 'fs';
 import {fileURLToPath} from 'url';
 import {dirname} from 'path';
-import * as timers from "node:timers";
 import * as string_decoder from "node:string_decoder";
 
 // Log an error and exit the process
@@ -38,31 +37,34 @@ catch (e) {
 // Get the arguments
 const ARGS= process.argv.slice(2);
 
-// Get the encoding from the arguments
-const ENCODING_KEY_INDEX = ARGS.indexOf('--encoding');
-if (ENCODING_KEY_INDEX <0 || ENCODING_KEY_INDEX+1===ARGS.length)
-    onError('The encoding must be specified');
-const ENCODING = ARGS[ENCODING_KEY_INDEX+1];
+// Get the encoding and extension from the arguments
+const DECODING_KEY_INDEX = ARGS.indexOf('--decode');
+let DECODE=true
+if (DECODING_KEY_INDEX <0 || DECODING_KEY_INDEX+2>=ARGS.length)
+    DECODE = false
 
-// Get the extension from the arguments
-const EXTENSION_KEY_INDEX = ARGS.indexOf('--extension');
-if (EXTENSION_KEY_INDEX <0 || EXTENSION_KEY_INDEX+1===ARGS.length)
-    onError('The extension must be specified');
-const EXTENSION = ARGS[EXTENSION_KEY_INDEX+1];
+const ENCODING = ARGS[DECODING_KEY_INDEX+1];
+const EXTENSION = ARGS[DECODING_KEY_INDEX+2];
 
 // Get the decoder
-const decoder = new string_decoder.StringDecoder(ENCODING);
+let DECODER
+if (DECODE)
+    DECODER = new string_decoder.StringDecoder(ENCODING);
 
 // Create a new serial port receiver
-const receiver = new SerialPort({ path: SERIAL_PORT_PATH, baudRate: SERIAL_PORT_BAUD_RATE });
+console.log(SERIAL_PORT_PATH)
+SerialPort.list().then(r=>{
+    console.log(`Available serial ports: ${r}`)
+}).catch(e=>console.error(`An error occurred while listing the serial ports: ${e}`))
+
+const receiver = new serialPort({ path: SERIAL_PORT_PATH, baudRate: SERIAL_PORT_BAUD_RATE });
 
 // Handle the data event
 receiver.on('data', (data) => {
     if (data) {
-        // Get the output file path
+        // Get the output binary file path
         const outputFilenameWithoutExtension = String(Date.now())
         const outputBinaryFilePath = `${BASE_PATH}/${outputFilenameWithoutExtension}.bin`;
-        const outputDecodedFilePath = `${BASE_PATH}/${outputFilenameWithoutExtension}.${EXTENSION}`;
 
         // Write the binary data to the file
         fs.writeFileSync(outputBinaryFilePath, data, (err) => {
@@ -72,16 +74,21 @@ receiver.on('data', (data) => {
                 console.log(`Binary data saved to ${outputBinaryFilePath}`);
         });
 
-        // Decode the data
-        const decodedData = decoder.write(data);
+        if (DECODE) {
+            // Get the decoded output file path
+             const outputDecodedFilePath = `${BASE_PATH}/${outputFilenameWithoutExtension}.${EXTENSION}`;
 
-        // Write the decoded data to the file
-        fs.writeFileSync(outputDecodedFilePath, decodedData, (err) => {
-            if (err)
-                console.error('An error occurred while saving the decoded file:', err);
-             else
-                console.log(`Decoded data saved to ${outputDecodedFilePath}`);
-        });
+             // Decode the data
+            const decodedData = DECODER.write(data);
+
+            // Write the decoded data to the file
+            fs.writeFileSync(outputDecodedFilePath, decodedData, (err) => {
+                if (err)
+                    console.error('An error occurred while saving the decoded file:', err);
+                else
+                    console.log(`Decoded data saved to ${outputDecodedFilePath}`);
+            });
+        }
     }
 });
 
