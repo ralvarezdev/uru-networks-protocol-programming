@@ -1,0 +1,24 @@
+{
+  "name": "04-sftp",
+  "version": "1.0.0",
+  "description": "SFTP client",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "js",
+    "javascript",
+    "sftp",
+    "ssh",
+    "ftp"
+  ],
+  "author": "Ramón Álvarez",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ssh2-sftp-client": "^11.0.0"
+  },
+  "type": "module"
+}
