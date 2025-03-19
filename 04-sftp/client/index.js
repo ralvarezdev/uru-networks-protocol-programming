@@ -1,11 +1,20 @@
 import "dotenv/config"
 import Client from 'ssh2-sftp-client'
+import fs from 'fs'
+import {fileURLToPath} from 'url';
+import {dirname} from 'path';
+import * as path from "node:path";
+
+// Get the filename and dirname
+const __filename = fileURLToPath(import.meta.url);
+export const __dirname = dirname(__filename);
 
 // SFTP client
 const SFTP_HOST = process.env.SFTP_HOST
 const SFTP_PORT = process.env.SFTP_PORT
 const SFTP_USERNAME = process.env.SFTP_USERNAME
 const SFTP_PASSWORD = process.env.SFTP_PASSWORD
+// const SFTP_PRIVATE_KEY_PATH = path.join(__dirname, 'id_rsa')
 
 // SFTP client
 class SFTPClient {
@@ -90,7 +99,8 @@ class SFTPClient {
         host: SFTP_HOST,
         password: SFTP_PASSWORD,
         username: SFTP_USERNAME,
-        port: SFTP_PORT
+        port: SFTP_PORT,
+        // privateKey: fs.readFileSync(SFTP_PRIVATE_KEY_PATH)
     });
 
     // List working directory files
@@ -103,7 +113,7 @@ class SFTPClient {
     await client.downloadFile("./remote.txt", "./files/download.txt");
 
     // Delete remote file
-    await client.deleteFile("./remote.txt");
+     await client.deleteFile("./remote.txt");
 
     // Close the connection
     await client.disconnect();

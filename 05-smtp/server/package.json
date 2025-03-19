@@ -1,0 +1,25 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "SMTP server",
+  "keywords": [
+    "smtp",
+    "server",
+    "js",
+    "javascript",
+    "mail",
+    "nodemailer"
+  ],
+  "license": "ISC",
+  "author": "Ramón Álvarez",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "mailparser": "^3.7.2",
+    "smtp-server": "^3.13.6"
+  }
+}
