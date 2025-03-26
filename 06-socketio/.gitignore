@@ -1,0 +1,25 @@
+# IDE folders
+/.idea
+/.vscode
+
+# Node modules
+/node_modules
+
+# Environment variables
+/**/*.env
+
+# Executable files
+/**/*.exe
+
+# Private and public keys
+/**/*.ed
+/**/*.pub
+/**/*.pem
+
+# Commands
+/**/*.cmd
+/**/*.sh
+/**/*.bat
+
+# NPM configuration
+/.npmrc
