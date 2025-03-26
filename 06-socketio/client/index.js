@@ -1,42 +1,108 @@
+import "dotenv/config";
 import { io } from "socket.io-client";
+import * as readline from "node:readline";
+
+// Constants
+const {URL} = process.env;
+let printMessage = false
+let ID = null;
+const MENU = (id)=>`
+--- WEB SOCKET CLIENT ---
+${!id ? "Connecting to server..." : `Connected to server with ID: ${id}`}
+
+Options:
+1. Broadcast message
+2. Echo message
+3. Private message
+4. Listen for messages
+5. Exit
+
+`
+
+// Get the user input
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
 // Connect to the server
-const socket = io("http://localhost:3000");
+const socket = io(URL);
 
 // Listen for connection success
 socket.on("your_id", (id) => {
-    console.log(`Your client ID is: ${id}`); // Displays the client's ID
+    ID = id;
 });
 
 // Listen for broadcast messages
 socket.on("broadcast", (message) => {
-    console.log(message);
+    if (printMessage)
+        console.log(message);
 });
 
 // Listen for echo messages
 socket.on("echo", (message) => {
-    console.log(message);
+    if (printMessage)
+        console.log(message);
 });
 
 // Listen for private messages
 socket.on("private_message", (message) => {
-    console.log(message);
+    if (printMessage)
+        console.log(message);
 });
 
-// Emit broadcast message
-setTimeout(() => {
-    socket.emit("broadcast", "Hello, this is a broadcast message!");
-}, 1000);
+// Main function
+function main() {
+    // Variables
+    let option = null;
 
-// Emit echo message
-setTimeout(() => {
-    socket.emit("echo", "Hello, please echo this message!");
-}, 2000);
+    while (true){
+        // Display menu
+        console.log(MENU(ID));
 
-// Emit private message (Replace 'SPECIFIC_CLIENT_ID' with actual socket ID)
-setTimeout(() => {
-    socket.emit("private_message", {
-        id: "SPECIFIC_CLIENT_ID",
-        message: "This is a private message.",
-    });
-}, 3000);
+        // Get option
+        rl.question("Please select an option: ", (input) => {
+            // Format input
+            option = input.trim().toLowerCase();
+
+            // Process option
+            if (option === "5") {
+                break
+            } else if (option === "1") {
+                // Broadcast message
+                rl.question("Enter message: ", (message) => {
+                    socket.emit("broadcast", {message});
+                });
+            } else if (option === "2") {
+                // Echo message
+                rl.question("Enter message: ", (message) => {
+                    socket.emit("echo", {message});
+                });
+            } else if (option === "3") {
+                // Private message
+                rl.question("Enter client ID: ", (id) => {
+                    rl.question("Enter message: ", (message) => {
+                        socket.emit("private_message", {
+                            id,
+                            message,
+                        });
+                    });
+                });
+            } else if (option === "4") {
+                // Listen for messages
+                printMessage = true;
+
+                // Continue printing until the user presses enter
+                if (printMessage) {
+                    console.log("Press enter to stop listening for messages");
+
+                    // Stop listening for messages
+                    rl.question("", () => {
+                        printMessage = false;
+                    });
+                }
+            }
+        });
+    }
+    rl.close();
+}
