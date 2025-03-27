@@ -36,33 +36,32 @@ async function input(message) {
 }
 
 // Create message
-function createMessage(id, event, message) {
-    if (message) return {id, time: new Date(), event, message}
-    return {id, time: new Date(), event}
+function createMessage({id=null, event, message=null}) {
+    let baseObj = {time: new Date(), event}
+
+    if (message)
+        baseObj= {...baseObj, message}
+    if (id)
+        baseObj = {...baseObj, id}
+
+    return baseObj
 }
 
 // Print message
-function printMessage({id, time, event, message = null}) {
-    if (message) {
-        console.log(`{
-    id: '${id}',
-    event: '${event}',
-    time: ${time},
-    message: '${message}'
-}`)
-        return
-    }
+function printMessage({id=null, time, event, message=null}) {
+    let baseObj = {time, event}
 
-    console.log(`{
-    id: '${id}',
-    event: '${event}',
-    time: ${time}
-}`)
+    if (id)
+        baseObj = {...baseObj, id}
+    if (message)
+        baseObj = {...baseObj, message}
+
+    console.log(JSON.stringify(baseObj, null, 4))
 }
 
 // Message handler
-function handleMessage(id, event, message) {
-    const messageObj = createMessage(id, event, message)
+function handleMessage({id=null, event, message=null}) {
+    const messageObj = createMessage({id, event, message})
     if (isListeningToMessages) {
         readMessages.push(messageObj)
         printMessage(messageObj)
@@ -78,31 +77,32 @@ const io = new Server(server);
 // When a client connects
 io.on("connection", (socket) => {
     // Sends the client its ID
-    unreadMessages.push(createMessage(socket.id, "connect"))
+    unreadMessages.push(createMessage({id:socket.id, event:"connect"}))
     socket.emit("your_id", socket.id);
     sockets.set(socket.id, socket);
 
     // Broadcast a message to all connected clients
     socket.on("broadcast", ({message}) => {
-        handleMessage(socket.id, "broadcast", message)
-        io.emit("broadcast", message);
+        handleMessage({event:"broadcast", message})
+        io.emit("broadcast", {message});
     });
 
     // Echo a message back to the sender
     socket.on("echo", ({message}) => {
-        handleMessage(socket.id, "echo", message)
-        socket.emit("echo", message);
+        handleMessage({event:"echo", message})
+        socket.emit("echo", {message});
     });
 
     // Send a message to a specific client
-    socket.on("private_message", ({id, message}) => {
-        handleMessage(socket.id, "private_message", message)
-        io.to(id).emit("private_message", message);
+    socket.on("private_message", ({id:toID, message}) => {
+        const fromID=socket.id
+        handleMessage({id:fromID, event:"private_message", message})
+        io.to(toID).emit("private_message", {id:fromID, message});
     });
 
     // Handle client disconnection
     socket.on("disconnect", () => {
-        handleMessage(socket.id, "disconnect")
+        handleMessage({id:socket.id, event:"disconnect"})
         sockets.delete(socket.id);
     });
 });
@@ -138,7 +138,7 @@ async function main() {
         } else if (option === "1") {
             // Broadcast message
             const message = await input("Enter message: ");
-            io.emit("broadcast", message);
+            io.emit("broadcast", {message});
         } else if (option === "2") {
             // Private message
             const id = await input("Enter client ID: ");
@@ -148,7 +148,7 @@ async function main() {
             if (!sockets.has(id)) {
                 console.log("Invalid ID");
             } else {
-                sockets.get(id).emit("private_message", message);
+                sockets.get(id).emit("private_message", {id: "SERVER", message});
             }
         } else if (option === "3") {
             // Print all available IDs

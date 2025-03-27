@@ -35,22 +35,28 @@ async function input(message) {
 }
 
 // Create message
-function createMessage(event, message) {
-    return {time: new Date(), event, message}
+function createMessage({id=null, event, message}) {
+    let baseObj = {time: new Date(), event, message}
+
+    if (id)
+        baseObj = {...baseObj, id}
+
+    return baseObj
 }
 
 // Print message
-function printMessage({time, event, message}) {
-    console.log(`{
-    event: '${event}',
-    time: ${time},
-    message: '${message}'
-}`)
+function printMessage({id=null, time, event, message}) {
+    let baseObj = {time, event, message}
+
+    if (id)
+        baseObj = {...baseObj, id}
+
+    console.log(JSON.stringify(baseObj, null, 4))
 }
 
 // Message handler
-function handleMessage(event, message) {
-    const messageObj = createMessage(event, message)
+function handleMessage(event, {id=null, message}) {
+    const messageObj = createMessage({id, event, message})
     if (isListeningToMessages) {
         readMessages.push(messageObj)
         printMessage(messageObj)
@@ -71,18 +77,18 @@ const connect = new Promise((resolve) => {
 })
 
 // Listen for broadcast messages
-socket.on("broadcast", (message) => {
-    handleMessage('broadcast', message)
+socket.on("broadcast", ({message}) => {
+    handleMessage('broadcast', {message})
 });
 
 // Listen for echo messages
-socket.on("echo", (message) => {
-    handleMessage('echo', message)
+socket.on("echo", ({message}) => {
+    handleMessage('echo', {message})
 });
 
 // Listen for private messages
-socket.on("private_message", (message) => {
-    handleMessage('private_message', message)
+socket.on("private_message", ({id, message}) => {
+    handleMessage('private_message', {id, message})
 });
 
 // Main function
