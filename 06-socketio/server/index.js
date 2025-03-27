@@ -4,23 +4,23 @@ import {Server} from "socket.io";
 import * as readline from "node:readline";
 
 // Constants
-const availableIDs = [];
+const sockets = new Map();
 let unreadMessages = []
 let readMessages = []
 let isListeningToMessages = false
 const {PORT} = process.env;
 const MENU = `
 --- WEB SOCKET SERVER ---
+Server is running on port ${PORT}
 
 Options:
 1. Broadcast message
-2. Echo message
-3. Private message
-4. List socket IDs
-5. Listen to messages
-6. Print unread messages
-7. Print read messages
-8. Exit
+2. Private message
+3. List socket IDs
+4. Listen to messages
+5. Print unread messages
+6. Print read messages
+7. Exit
 `
 
 // Get the user input
@@ -44,8 +44,7 @@ function createMessage(id, event, message) {
 // Print message
 function printMessage({id, time, event, message = null}) {
     if (message) {
-        console.log(`
-{
+        console.log(`{
     id: '${id}',
     event: '${event}',
     time: ${time},
@@ -54,8 +53,7 @@ function printMessage({id, time, event, message = null}) {
         return
     }
 
-    console.log(`
-{
+    console.log(`{
     id: '${id}',
     event: '${event}',
     time: ${time}
@@ -80,8 +78,9 @@ const io = new Server(server);
 // When a client connects
 io.on("connection", (socket) => {
     // Sends the client its ID
+    unreadMessages.push(createMessage(socket.id, "connect"))
     socket.emit("your_id", socket.id);
-    availableIDs.push(socket.id);
+    sockets.set(socket.id, socket);
 
     // Broadcast a message to all connected clients
     socket.on("broadcast", ({message}) => {
@@ -104,17 +103,22 @@ io.on("connection", (socket) => {
     // Handle client disconnection
     socket.on("disconnect", () => {
         handleMessage(socket.id, "disconnect")
-        availableIDs.splice(availableIDs.indexOf(socket.id))
+        sockets.delete(socket.id);
     });
 });
 
 // Start the server
+const serverListen = new Promise((resolve, reject) => {
 server.listen(PORT, () => {
-    console.log(`Socket server is running on port ${PORT}`);
+    resolve();
 });
+})
 
 // Main function
 async function main() {
+    // Wait for the server to start
+    await serverListen;
+
     // Variables
     let exit = false;
     let option = null;
@@ -128,36 +132,44 @@ async function main() {
         option = option.trim().toLowerCase();
 
         // Process option
-        if (option === "8") {
+        if (option === "7") {
             // Exit
             exit = true;
         } else if (option === "1") {
             // Broadcast message
             const message = await input("Enter message: ");
-            server.emit("broadcast", {message});
+            io.emit("broadcast", message);
         } else if (option === "2") {
-            // Echo message
-            const message = await input("Enter message: ");
-            server.emit("echo", {message});
-        } else if (option === "3") {
             // Private message
             const id = await input("Enter client ID: ");
             const message = await input("Enter message: ");
-            server.emit("private_message", {id, message,});
-        } else if (option === "4") {
+
+            // Check if the ID is valid
+            if (!sockets.has(id)) {
+                console.log("Invalid ID");
+            } else {
+                sockets.get(id).emit("private_message", message);
+            }
+        } else if (option === "3") {
             // Print all available IDs
-            console.log("Available IDs: ", availableIDs.join(", "));
-        } else if (option === "5") {
+            console.log("Available IDs:")
+            sockets.forEach((_, id) => console.log(id))
+        } else if (option === "4") {
             // Listen for messages
             isListeningToMessages = true;
 
             // Continue printing until the user presses enter
-            console.log("Press 'enter' to stop listening for messages");
+            console.log("Press 'ENTER' to stop listening for messages");
 
             // Stop listening for messages
             await input("");
             isListeningToMessages = false;
-        } else if (option === "6") {
+        } else if (option === "5") {
+            if (unreadMessages.length === 0) {
+                console.log("No unread messages");
+                continue;
+            }
+
             // Print unread messages
             console.log("Unread messages: ");
             unreadMessages.forEach(printMessage);
@@ -165,7 +177,12 @@ async function main() {
             // Clear unread messages4
             readMessages.push(...unreadMessages)
             unreadMessages = [];
-        } else if (option === "7") {
+        } else if (option === "6") {
+            if (readMessages.length === 0) {
+                console.log("No read messages");
+                continue;
+            }
+
             // Print read messages
             console.log("Read messages: ");
             readMessages.forEach(printMessage);

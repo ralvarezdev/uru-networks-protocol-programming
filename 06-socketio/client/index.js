@@ -41,8 +41,7 @@ function createMessage(event, message) {
 
 // Print message
 function printMessage({time, event, message}) {
-    console.log(`
-{
+    console.log(`{
     event: '${event}',
     time: ${time},
     message: '${message}'
@@ -125,12 +124,17 @@ async function main() {
             isListeningToMessages = true;
 
             // Continue printing until the user presses enter
-            console.log("Press 'enter' to stop listening for messages");
+            console.log("Press 'ENTER' to stop listening for messages");
 
             // Stop listening for messages
             await input("");
             isListeningToMessages = false;
         } else if (option === "5") {
+            if (unreadMessages.length === 0) {
+                console.log("No unread messages")
+                continue
+            }
+
             // Print unread messages
             console.log("Unread messages:")
             unreadMessages.forEach(printMessage)
@@ -139,6 +143,11 @@ async function main() {
             readMessages.push(...unreadMessages)
             unreadMessages = []
         } else if (option === "6") {
+            if (readMessages.length === 0) {
+                console.log("No read messages")
+                continue
+            }
+
             // Print read messages
             console.log("Read messages:")
             readMessages.forEach(printMessage)
